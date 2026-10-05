@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Type play</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>描边轮廓复刻 Pro - Outline Studio Professional</title>
+    <style>
+        /* 仅调整UI主题色彩以契合水墨风格，其余结构完全锁定保持原样 */
+        :root { --line-color: #333; --bg-ui: #e8e4d9; } /* 宣纸质感底色 */
+        body { 
+            background: var(--bg-ui); color: #333; 
+            background-image: radial-gradient(circle at 50% 0%, #f4f0e6 0%, #e8e4d9 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; padding: 0; display: flex; width: 100vw; height: 100vh; overflow: hidden; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .sidebar {
+            width: 360px; height: 100vh; 
+            background: rgba(250, 248, 243, 0.95); /* 半透明宣纸白 */
+            border-right: 1px solid rgba(0,0,0,0.06);
+            color: #333;
+            display: flex; flex-direction: column; padding: 0; box-sizing: border-box;
+            z-index: 10; flex-shrink: 0;
+            /* 去除面板阴影 */
+        }
+
+        .sidebar-content {
+            flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 20px;
+            padding: 30px 25px; scrollbar-width: none;
+        }
+        .sidebar-content::-webkit-scrollbar { display: none; }
+
+        .panel { display: flex; flex-direction: column; gap: 20px; } 
+        .ctrl { display: flex; flex-direction: column; gap: 8px; } 
+
+        .ctrl label { 
+            font-size: 11px; color: #666; display: flex; justify-content: space-between;
+            align-items: center; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .ratio-wrapper { display: flex; gap: 10px; align-items: center; }
+        .ratio-text { 
+            cursor: pointer; font-size: 10px; opacity: 0.3; transition: opacity 0.2s; color: #000; font-weight: bold;
+        }
+        .ratio-text.active { opacity: 1; } 
+
+        .file-input-wrapper {
+            position: relative; display: flex; align-items: center; 
+            background: #111; border: 1px solid #111;
+            justify-content: center; box-sizing: border-box;
+        }
+        .file-input-container {
+            padding: 12px; font-size: 11px; flex: 1; cursor: pointer; 
+            color: #fff; text-align: center; text-transform: uppercase;
+        }
+        .clear-btn {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            color: #fff; cursor: pointer; font-size: 14px; font-weight: bold;
+            padding: 5px; line-height: 1; display: none; transition: opacity 0.2s;
+        }
+        .clear-btn:hover { opacity: 0.6; }
+        
+        .btn-white {
+            background: #111; color: #fff; border: none; padding: 12px; 
+            font-size: 10px; cursor: pointer; text-transform: uppercase;
+            transition: opacity 0.2s; box-sizing: border-box;
+        }
+        .btn-white:hover { opacity: 0.8; }
+
+        .btn-random {
+            background: #e0dcd0; border: 1px solid #ccc5b3; padding: 12px; 
+            font-size: 10px; cursor: pointer; text-transform: uppercase;
+            box-sizing: border-box; color: #333;
+        }
+        .btn-random:hover { opacity: 0.8; }
+
+        input[type="range"] {
+            -webkit-appearance: none; width: 100%; height: 2px; background: #dcd6c8; margin: 4px 0 16px 0; outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: #222; cursor: pointer;
+        }
+
+        .color-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; }
+        .bg-ctrl-group { 
+            display: flex; background: #fff; height: 24px; box-sizing: border-box;
+            align-items: center; width: 100%; border: 1px solid #dcd6c8; overflow: hidden;
+        }
+        .color-block { width: 30px; height: 100%; cursor: pointer; border-right: 1px solid #eee; }
+        
+        .hex-display { 
+            flex: 1; text-align: center; border: none; font-size: 10px; 
+            outline: none; background: transparent; min-width: 0; width: 100%;
+        }
+
+        .footer-text { 
+            padding: 25px 0; text-align: center; 
+            font-size: 9px; color: #aaa; letter-spacing: 1px;
+        }
+
+        .canvas-area { 
+            flex: 1; background: transparent; display: flex; 
+            align-items: center; justify-content: center; position: relative; overflow: hidden; 
+        }
+        
+        canvas { 
+            background: #F5F2EB; 
+            /* 去除画布阴影 */
+        }
+        #upload { display: none; }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="sidebar-content">
+        <div class="panel">
+            <div class="ctrl">
+                <label>
+                    1. 图像源 (IMAGE SOURCE)
+                    <div class="ratio-wrapper">
+                        <span class="ratio-text" data-ratio="3/4">3:4</span>
+                        <span class="ratio-text active" data-ratio="full">满屏</span>
+                    </div>
+                </label>
+                <div class="file-input-wrapper">
+                    <div class="file-input-container" onclick="document.getElementById('upload').click()" id="fileNameDisplay">上传图片 UPLOAD</div>
+                    <div class="clear-btn" id="clearImageBtn" onclick="clearImage(event)">✕</div>
+                </div>
+                <input type="file" id="upload" accept="image/*">
+            </div>
+
+            <div class="ctrl">
+                <label>2. 调色盘 (PALETTE)</label>
+                <div class="color-row">
+                    <div class="ctrl">
+                        <label>主体 (FG)</label>
+                        <div class="bg-ctrl-group">
+                            <input type="color" id="colorInk" value="#111111" style="display:none" oninput="updateColor('Ink')">
+                            <div id="blockInk" class="color-block" style="background-color: #111111;" onclick="document.getElementById('colorInk').click()"></div>
+                            <input type="text" class="hex-display" id="hexInk" value="#111111" oninput="handleHexInput('Ink')">
+                        </div>
+                    </div>
+                    <div class="ctrl">
+                        <label>背景 (BG)</label>
+                        <div class="bg-ctrl-group">
+                            <input type="color" id="colorPaper" value="#F5F2EB" style="display:none" oninput="updateColor('Paper')">
+                            <div id="blockPaper" class="color-block" style="background-color: #F5F2EB;" onclick="document.getElementById('colorPaper').click()"></div>
+                            <input type="text" class="hex-display" id="hexPaper" value="#F5F2EB" oninput="handleHexInput('Paper')">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ctrl">
+                <label>3. 图像参数 (PARAMETERS)</label>
+                <div class="ctrl">
+                    <label>喷绘晕染 DIFFUSION <span id="v-diffusion">8</span></label>
+                    <input type="range" id="diffusion" min="0" max="80" step="1" value="8">
+                </div>
+
+                <div class="ctrl">
+                    <label>磨砂颗粒 GRAIN <span id="v-grain">85</span></label>
+                    <input type="range" id="grain" min="0" max="100" step="1" value="85">
+                </div>
+
+                <div class="ctrl">
+                    <label>色彩对比 CONTRAST <span id="v-contrast">1.8</span></label>
+                    <input type="range" id="contrast" min="1" max="4" step="0.1" value="1.8">
+                </div>
+
+                <div class="ctrl">
+                    <label>画面缩放 ZOOM <span id="v-zoom">0.6</span></label>
+                    <input type="range" id="zoom" min="0.1" max="2.0" step="0.1" value="0.6">
+                </div>
+                
+                <div class="ctrl">
+                    <label>抠图阈值 THRESHOLD <span id="v-threshold">40</span></label>
+                    <input type="range" id="threshold" min="5" max="150" step="1" value="40">
+                </div>
+            </div>
+
+            <div class="ctrl">
+                <label>4. 导出 (EXPORT)</label>
+                <div class="color-row">
+                    <button class="btn-white" onclick="downloadImage('jpeg', this)">JPG</button>
+                    <button class="btn-white" onclick="downloadImage('png', this)">PNG</button>
+                </div>
+                <div class="color-row" style="margin-top: 0;">
+                    <button class="btn-random" style="grid-column: 1 / 3;" onclick="randomPalette()">随机配色</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer-text">2026 &copy;Design by Type Play Studio</div>
+</div>
+
+<div class="canvas-area" id="canvasArea">
+    <canvas id="mainCanvas"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d', {willReadFrequently: true});
+    
+    let imgSource = null;
+    let cachedSubject = null;
+    let isPngFormat = false;
+    let needsUpdate = false;
+    let ratioMode = 'full'; 
+    let currentRatio = 1; 
+
+    const offCanvas = document.createElement('canvas');
+    const offCtx = offCanvas.getContext('2d', {willReadFrequently: true});
+
+    document.querySelectorAll('input[type="range"]').forEach(input => {
+        input.addEventListener('input', () => {
+            const display = document.getElementById('v-' + input.id);
+            if(display) display.innerText = input.value;
+            
+            if (input.id === 'threshold' && imgSource) {
+                cachedSubject = getProcessedSubject(imgSource);
+            }
+            needsUpdate = true;
+        });
+    });
+
+    document.querySelectorAll('.ratio-text').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.ratio-text').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            ratioMode = btn.dataset.ratio;
+            resizeCanvas();
+        };
+    });
+
+    document.getElementById('upload').onchange = e => {
+        const file = e.target.files[0];
+        if (file) {
+            isPngFormat = (file.type === "image/png");
+            const img = new Image();
+            img.decoding = 'sync'; 
+            img.onload = () => {
+                imgSource = img;
+                URL.revokeObjectURL(img.src);
+                
+                let fileName = file.name;
+                const dotIdx = fileName.lastIndexOf('.');
+                if (dotIdx > 0) fileName = fileName.substring(0, dotIdx);
+                if (fileName.length > 8) fileName = fileName.substring(0, 8) + '...';
+                
+                document.getElementById('fileNameDisplay').innerText = fileName;
+                document.getElementById('clearImageBtn').style.display = 'block';
+
+                cachedSubject = getProcessedSubject(imgSource);
+
+                resizeCanvas();
+                needsUpdate = true;
+            };
+            img.src = URL.createObjectURL(file);
+        }
+        e.target.value = '';
+    };
+
+    function clearImage(e) {
+        if (e) e.stopPropagation(); 
+        imgSource = null;
+        cachedSubject = null;
+        document.getElementById('upload').value = '';
+        document.getElementById('fileNameDisplay').innerText = '上传图片 UPLOAD';
+        document.getElementById('clearImageBtn').style.display = 'none';
+        needsUpdate = true; 
+    }
+
+    function updateColor(type) {
+        const val = document.getElementById('color' + type).value;
+        document.getElementById('hex' + type).value = val.toUpperCase();
+        document.getElementById('block' + type).style.backgroundColor = val;
+        needsUpdate = true;
+    }
+
+    function handleHexInput(type) {
+        let val = document.getElementById('hex' + type).value.trim();
+        if (val.length > 0 && val[0] !== '#') val = '#' + val;
+        let validHex = null;
+        if (/^#[0-9A-Fa-f]{6}$/.test(val)) validHex = val;
+        else if (/^#[0-9A-Fa-f]{3}$/.test(val)) validHex = '#' + val[1]+val[1] + val[2]+val[2] + val[3]+val[3];
+
+        if (validHex) {
+            document.getElementById('color' + type).value = validHex;
+            document.getElementById('block' + type).style.backgroundColor = validHex;
+            needsUpdate = true;
+        }
+    }
+
+    function hslToHex(h, s, l) {
+        l /= 100;
+        const a = s * Math.min(l, 1 - l) / 100;
+        const f = n => {
+            const k = (n + h / 30) % 12;
+            const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+            const hex = Math.round(255 * color).toString(16);
+            return hex.length === 1 ? '0' + hex : hex;
+        };
+        return ('#' + f(0) + f(8) + f(4)).toUpperCase();
+    }
+
+    function randomPalette() {
+        const baseHue = Math.floor(Math.random() * 360);
+        const sign = Math.random() < 0.5 ? 1 : -1;
+        const hueOffset = sign * (Math.floor(Math.random() * 41) + 20);
+        const paperHue = (baseHue + hueOffset + 360) % 360;
+
+        const inkSat = Math.floor(Math.random() * 41) + 60;
+        const paperSat = Math.floor(Math.random() * 41) + 60;
+        const inkLight = Math.floor(Math.random() * 31) + 10;
+        const paperLight = Math.floor(Math.random() * 31) + 65;
+
+        document.getElementById('colorInk').value = hslToHex(baseHue, inkSat, inkLight);
+        document.getElementById('colorPaper').value = hslToHex(paperHue, paperSat, paperLight);
+        
+        updateColor('Ink');
+        updateColor('Paper');
+    }
+
+    function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : { r: 0, g: 0, b: 0 };
+    }
+
+    function resizeCanvas() {
+        const area = document.getElementById('canvasArea');
+        const padding = ratioMode === 'full' ? 0 : 60;
+        const maxW = area.clientWidth - padding;
+        const maxH = area.clientHeight - padding;
+        
+        if (ratioMode === 'full') currentRatio = maxW / maxH;
+        else {
+            const parts = ratioMode.split('/');
+            currentRatio = parseFloat(parts[0]) / parseFloat(parts[1]);
+        }
+
+        let w = maxW; let h = w / currentRatio;
+        if (h > maxH) { h = maxH; w = h * currentRatio; }
+
+        canvas.style.width = Math.floor(w) + 'px';
+        canvas.style.height = Math.floor(h) + 'px';
+        needsUpdate = true;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function getProcessedSubject(source) {
+        if (!source) return null;
+        const sw = 1200; 
+        const sh = Math.round(source.height * (sw / source.width));
+        
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = sw; 
+        tempCanvas.height = sh;
+        const octx = tempCanvas.getContext('2d', {willReadFrequently: true});
+        octx.drawImage(source, 0, 0, sw, sh);
+        
+        const idata = octx.getImageData(0, 0, sw, sh);
+        const pix = idata.data;
+        const thresh = parseInt(document.getElementById('threshold').value) || 40;
+        
+        const corners = [
+            [pix[0], pix[1], pix[2]], 
+            [pix[(sw-1)*4], pix[(sw-1)*4+1], pix[(sw-1)*4+2]]
+        ];
+
+        let minX = sw, minY = sh, maxX = 0, maxY = 0, found = false;
+
+        for (let y = 0; y < sh; y++) {
+            for (let x = 0; x < sw; x++) {
+                const i = (y * sw + x) * 4;
+                let isBG = false;
+                
+                if (isPngFormat) { 
+                    if (pix[i+3] < 10) isBG = true; 
+                } else {
+                    for (let c of corners) {
+                        if (Math.abs(pix[i]-c[0]) < thresh && Math.abs(pix[i+1]-c[1]) < thresh && Math.abs(pix[i+2]-c[2]) < thresh) {
+                            isBG = true; break;
+                        }
+                    }
+                }
+                
+                if (!isBG) {
+                    if (x < minX) minX = x; if (x > maxX) maxX = x;
+                    if (y < minY) minY = y; if (y > maxY) maxY = y;
+                    found = true;
+                } else { 
+                    pix[i+3] = 0; 
+                }
+            }
+        }
+        
+        if (found) {
+            const finalW = maxX - minX + 1; 
+            const finalH = maxY - minY + 1;
+            const res = document.createElement('canvas');
+            res.width = finalW; res.height = finalH;
+            octx.putImageData(idata, 0, 0);
+            res.getContext('2d').drawImage(tempCanvas, minX, minY, finalW, finalH, 0, 0, finalW, finalH);
+            return res;
+        }
+        return source;
+    }
+
+    function processPixels(w, h, transparentPaper = false) {
+        const diffusion = parseFloat(document.getElementById('diffusion').value);
+        const grain = parseFloat(document.getElementById('grain').value);
+        const contrast = parseFloat(document.getElementById('contrast').value);
+        const zoom = parseFloat(document.getElementById('zoom').value);
+        
+        const paperColor = document.getElementById('colorPaper').value;
+        const inkColor = document.getElementById('colorInk').value;
+
+        offCanvas.width = w;
+        offCanvas.height = h;
+
+        if (!imgSource || !cachedSubject) {
+            if (!transparentPaper) {
+                offCtx.fillStyle = paperColor;
+                offCtx.fillRect(0, 0, w, h);
+            } else {
+                offCtx.clearRect(0, 0, w, h);
+            }
+            return offCanvas;
+        }
+
+        const scale = Math.min(w / cachedSubject.width, h / cachedSubject.height) * zoom;
+        const dw = cachedSubject.width * scale;
+        const dh = cachedSubject.height * scale;
+        const dx = (w - dw) / 2;
+        const dy = (h - dh) / 2;
+
+        offCtx.clearRect(0, 0, w, h);
+        
+        offCtx.filter = `blur(${diffusion}px) saturate(${contrast * 100}%) contrast(${contrast * 100}%)`;
+        offCtx.drawImage(cachedSubject, dx, dy, dw, dh);
+        offCtx.filter = 'none';
+        
+        const imgData = offCtx.getImageData(0, 0, w, h);
+        const data = imgData.data;
+        const bgRgb = hexToRgb(paperColor);
+        const fgRgb = hexToRgb(inkColor);
+        const grainIntensity = grain * 0.8;
+
+        for (let i = 0; i < data.length; i += 4) {
+            if (data[i+3] > 10) {
+                const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
+                const noise = (Math.random() - 0.5) * grainIntensity;
+                const ratio = brightness / 255;
+                
+                const mixedR = fgRgb.r + (bgRgb.r - fgRgb.r) * ratio + noise;
+                const mixedG = fgRgb.g + (bgRgb.g - fgRgb.g) * ratio + noise;
+                const mixedB = fgRgb.b + (bgRgb.b - fgRgb.b) * ratio + noise;
+
+                data[i] = Math.max(0, Math.min(255, mixedR));
+                data[i+1] = Math.max(0, Math.min(255, mixedG));
+                data[i+2] = Math.max(0, Math.min(255, mixedB));
+                data[i+3] = 255;
+            } else {
+                if (!transparentPaper) {
+                    const paperNoise = (Math.random() - 0.5) * (grainIntensity * 0.15);
+                    data[i] = Math.max(0, Math.min(255, bgRgb.r + paperNoise)); 
+                    data[i+1] = Math.max(0, Math.min(255, bgRgb.g + paperNoise)); 
+                    data[i+2] = Math.max(0, Math.min(255, bgRgb.b + paperNoise));
+                    data[i+3] = 255;
+                } else {
+                    data[i] = bgRgb.r; data[i+1] = bgRgb.g; data[i+2] = bgRgb.b;
+                    data[i+3] = 0;
+                }
+            }
+        }
+
+        const microGrainCount = (w * h * 0.1); 
+        for (let j = 0; j < microGrainCount; j++) {
+            const rx = Math.floor(Math.random() * w);
+            const ry = Math.floor(Math.random() * h);
+            const idx = (ry * w + rx) * 4;
+            
+            if (transparentPaper) {
+                if (data[idx+3] !== 0) {
+                    const alpha = Math.random() * 0.05;
+                    data[idx]   = data[idx]   * (1 - alpha) + fgRgb.r * alpha;
+                    data[idx+1] = data[idx+1] * (1 - alpha) + fgRgb.g * alpha;
+                    data[idx+2] = data[idx+2] * (1 - alpha) + fgRgb.b * alpha;
+                }
+            } else {
+                if (data[idx] !== bgRgb.r || data[idx+1] !== bgRgb.g || data[idx+2] !== bgRgb.b) {
+                    const alpha = Math.random() * 0.05;
+                    data[idx]   = data[idx]   * (1 - alpha) + fgRgb.r * alpha;
+                    data[idx+1] = data[idx+1] * (1 - alpha) + fgRgb.g * alpha;
+                    data[idx+2] = data[idx+2] * (1 - alpha) + fgRgb.b * alpha;
+                }
+            }
+        }
+
+        offCtx.putImageData(imgData, 0, 0);
+        return offCanvas;
+    }
+
+    function renderEffect() {
+        const h = 1200;
+        const w = Math.floor(1200 * currentRatio);
+        
+        if (canvas.width !== w || canvas.height !== h) {
+            canvas.width = w;
+            canvas.height = h;
+        }
+        
+        const resultCanvas = processPixels(w, h, false);
+        
+        ctx.clearRect(0, 0, w, h);
+        ctx.imageSmoothingEnabled = false; 
+        ctx.drawImage(resultCanvas, 0, 0);
+    }
+
+    function loop() {
+        if (needsUpdate) {
+            renderEffect();
+            needsUpdate = false;
+        }
+        requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    function downloadImage(format, btn) {
+        setTimeout(() => {
+            const isPng = (format === 'png');
+            
+            const pw = Math.floor(1200 * currentRatio);
+            const ph = 1200;
+            
+            const EXPORT_SCALE = 4; 
+            const expW = pw * EXPORT_SCALE;
+            const expH = ph * EXPORT_SCALE;
+
+            const expCanvas = document.createElement('canvas');
+            expCanvas.width = expW;
+            expCanvas.height = expH;
+            const expCtx = expCanvas.getContext('2d');
+
+            expCtx.imageSmoothingEnabled = false;
+
+            const resultCanvas = processPixels(pw, ph, isPng);
+
+            expCtx.save();
+            expCtx.scale(EXPORT_SCALE, EXPORT_SCALE);
+            expCtx.drawImage(resultCanvas, 0, 0);
+            expCtx.restore();
+
+            expCanvas.toBlob(blob => {
+                if (blob) {
+                    const link = document.createElement('a');
+                    link.download = `Airbrush_Digital_Art_${Date.now()}.${isPng ? 'png' : 'jpg'}`;
+                    link.href = URL.createObjectURL(blob);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    setTimeout(() => URL.revokeObjectURL(link.href), 1000); 
+                }
+            }, `image/${format}`, 1.0);
+
+        }, 50);
+    }
+</script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
